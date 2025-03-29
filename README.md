@@ -10,6 +10,9 @@ A robust Spring Boot application that provides a RESTful API for managing produc
 - Comprehensive test coverage (Unit & Integration tests)
 - RESTful API endpoints
 - Secure Git credential management
+- Kafka integration for asynchronous processing
+- Proper HTTP status codes for all operations
+- Global exception handling
 
 ## Technologies
 
@@ -20,6 +23,8 @@ A robust Spring Boot application that provides a RESTful API for managing produc
 - Lombok
 - SpringDoc OpenAPI UI
 - Maven
+- Apache Kafka
+- TestContainers
 
 ## Getting Started
 
@@ -28,6 +33,7 @@ A robust Spring Boot application that provides a RESTful API for managing produc
 - Java 21 or higher
 - Maven 3.6 or higher
 - Git (with credential manager configured)
+- Docker (for running Kafka in tests)
 
 ### Git Setup
 
@@ -74,11 +80,11 @@ Once the application is running, you can access the API documentation at:
 
 ### Products API
 
-- GET `/api/products` - Get all products
-- GET `/api/products/{id}` - Get a product by ID
-- POST `/api/products` - Create a new product
-- PUT `/api/products/{id}` - Update a product
-- DELETE `/api/products/{id}` - Delete a product
+- GET `/api/products` - Get all products (200 OK)
+- GET `/api/products/{id}` - Get a product by ID (200 OK, 404 Not Found)
+- POST `/api/products` - Create a new product (201 Created)
+- PUT `/api/products/{id}` - Update a product (200 OK, 404 Not Found)
+- DELETE `/api/products/{id}` - Delete a product (200 OK, 404 Not Found)
 
 ## Database
 
@@ -90,13 +96,43 @@ Database Configuration:
 - Username: `sa`
 - Password: (empty)
 
+## Kafka Integration
+
+The application uses Kafka for asynchronous processing of product operations. Kafka configuration is handled through Spring profiles:
+
+- Development: Uses the default Kafka configuration
+- Test: Uses TestContainers for running Kafka in tests
+
+### Kafka Topics
+- `products`: Topic for product-related events
+
 ## Testing
 
-The project includes both unit and integration tests. To run the tests:
+The project includes comprehensive test coverage with:
+- Unit tests for service layer
+- Integration tests for controller layer
+- Kafka integration tests using TestContainers
+
+To run the tests:
 
 ```bash
 mvn test
 ```
+
+## Error Handling
+
+The application includes a global exception handler that provides consistent error responses:
+- 404 Not Found: When a product is not found
+- 400 Bad Request: For invalid input
+- 500 Internal Server Error: For unexpected errors
+
+## Recent Changes
+
+- Added Kafka integration for asynchronous processing
+- Implemented proper HTTP status codes for all operations
+- Added global exception handling
+- Enhanced test coverage with Kafka integration tests
+- Improved error handling with custom exceptions
 
 ## Contributing
 
