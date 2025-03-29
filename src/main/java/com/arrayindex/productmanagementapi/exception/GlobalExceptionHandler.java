@@ -1,4 +1,4 @@
-package com.arrayindex.demo1.exception;
+package com.arrayindex.productmanagementapi.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

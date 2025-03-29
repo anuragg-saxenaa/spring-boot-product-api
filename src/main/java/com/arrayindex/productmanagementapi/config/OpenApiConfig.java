@@ -1,4 +1,4 @@
-package com.arrayindex.demo1.config;
+package com.arrayindex.productmanagementapi.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

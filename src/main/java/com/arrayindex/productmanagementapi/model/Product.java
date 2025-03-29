@@ -1,4 +1,4 @@
-package com.arrayindex.demo1.model;
+package com.arrayindex.productmanagementapi.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

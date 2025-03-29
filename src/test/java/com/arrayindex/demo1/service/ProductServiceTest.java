@@ -1,8 +1,8 @@
-package com.arrayindex.demo1.service;
+package com.arrayindex.productmanagementapi.service;
 
-import com.arrayindex.demo1.model.Product;
-import com.arrayindex.demo1.repository.ProductRepository;
-import com.arrayindex.demo1.exception.ProductNotFoundException;
+import com.arrayindex.productmanagementapi.model.Product;
+import com.arrayindex.productmanagementapi.repository.ProductRepository;
+import com.arrayindex.productmanagementapi.exception.ProductNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

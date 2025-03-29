@@ -1,4 +1,4 @@
-package com.arrayindex.demo1.config;
+package com.arrayindex.productmanagementapi.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -13,7 +13,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import com.arrayindex.demo1.model.Product;
+import com.arrayindex.productmanagementapi.model.Product;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +58,7 @@ public class TestKafkaConfig {
         configProps.put("value.deserializer", JsonDeserializer.class);
         configProps.put("group.id", "product-group");
         configProps.put("auto.offset.reset", "earliest");
-        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.arrayindex.demo1.model");
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.arrayindex.productmanagementapi.model");
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 

@@ -1,7 +1,7 @@
-package com.arrayindex.demo1.controller;
+package com.arrayindex.productmanagementapi.controller;
 
-import com.arrayindex.demo1.model.Product;
-import com.arrayindex.demo1.service.ProductService;
+import com.arrayindex.productmanagementapi.model.Product;
+import com.arrayindex.productmanagementapi.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

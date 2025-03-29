@@ -1,6 +1,6 @@
-package com.arrayindex.demo1.service;
+package com.arrayindex.productmanagementapi.service;
 
-import com.arrayindex.demo1.model.Product;
+import com.arrayindex.productmanagementapi.model.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

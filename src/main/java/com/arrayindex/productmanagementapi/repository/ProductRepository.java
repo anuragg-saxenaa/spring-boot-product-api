@@ -1,6 +1,6 @@
-package com.arrayindex.demo1.repository;
+package com.arrayindex.productmanagementapi.repository;
 
-import com.arrayindex.demo1.model.Product;
+import com.arrayindex.productmanagementapi.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {

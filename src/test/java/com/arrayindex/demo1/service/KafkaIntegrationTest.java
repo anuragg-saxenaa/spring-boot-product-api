@@ -1,6 +1,6 @@
-package com.arrayindex.demo1.service;
+package com.arrayindex.productmanagementapi.service;
 
-import com.arrayindex.demo1.model.Product;
+import com.arrayindex.productmanagementapi.model.Product;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,7 +37,7 @@ class KafkaIntegrationTest {
         registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
         registry.add("spring.kafka.consumer.key-deserializer", () -> "org.apache.kafka.common.serialization.StringDeserializer");
         registry.add("spring.kafka.consumer.value-deserializer", () -> "org.springframework.kafka.support.serializer.JsonDeserializer");
-        registry.add("spring.kafka.consumer.properties.spring.json.trusted.packages", () -> "com.arrayindex.demo1.model");
+        registry.add("spring.kafka.consumer.properties.spring.json.trusted.packages", () -> "com.arrayindex.productmanagementapi.model");
         registry.add("spring.kafka.producer.key-serializer", () -> "org.apache.kafka.common.serialization.StringSerializer");
         registry.add("spring.kafka.producer.value-serializer", () -> "org.springframework.kafka.support.serializer.JsonSerializer");
         registry.add("spring.kafka.properties.allow.auto.create.topics", () -> "true");

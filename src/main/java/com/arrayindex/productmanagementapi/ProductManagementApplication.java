@@ -1,4 +1,4 @@
-package com.arrayindex.demo1;
+package com.arrayindex.productmanagementapi;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
