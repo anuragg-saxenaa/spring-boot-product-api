@@ -26,6 +26,22 @@ This is a Spring Boot application that provides a RESTful API for managing produ
 
 - Java 21 or higher
 - Maven 3.6 or higher
+- Git (with credential manager configured)
+
+### Git Setup
+
+This project uses Git credential manager for secure authentication. To set it up:
+
+1. Configure Git to use the macOS keychain:
+   ```bash
+   git config --global credential.helper osxkeychain
+   ```
+
+2. The first time you push to GitHub, you'll be prompted for your credentials:
+   - Username: your GitHub username
+   - Password: your GitHub Personal Access Token (PAT)
+
+3. Your credentials will be securely stored in the macOS keychain for future use.
 
 ### Running the Application
 
