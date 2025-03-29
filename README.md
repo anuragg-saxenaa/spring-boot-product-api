@@ -9,6 +9,7 @@ This is a Spring Boot application that provides a RESTful API for managing produ
 - OpenAPI/Swagger documentation
 - Comprehensive test coverage (Unit & Integration tests)
 - RESTful API endpoints
+- Secure Git credential management
 
 ## Technologies
 
