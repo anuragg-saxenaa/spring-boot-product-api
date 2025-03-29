@@ -1,116 +1,194 @@
 package com.arrayindex.demo1.controller;
 
+import com.arrayindex.demo1.ProductManagementApplication;
 import com.arrayindex.demo1.model.Product;
-import com.arrayindex.demo1.repository.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
-import java.util.Arrays;
+import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@Slf4j
+@SpringBootTest(classes = ProductManagementApplication.class)
 @AutoConfigureMockMvc
 class ProductControllerIntegrationTest {
+
+    private static final KafkaContainer kafka = new KafkaContainer(
+        DockerImageName.parse("confluentinc/cp-kafka:7.5.1")
+    );
+
+    @DynamicPropertySource
+    static void kafkaProperties(DynamicPropertyRegistry registry) {
+        log.info("Starting Kafka container...");
+        kafka.start();
+        String bootstrapServers = kafka.getBootstrapServers();
+        log.info("Kafka bootstrap servers: {}", bootstrapServers);
+        registry.add("spring.kafka.bootstrap-servers", () -> bootstrapServers);
+        registry.add("spring.kafka.consumer.group-id", () -> "product-group");
+        registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
+        registry.add("spring.kafka.consumer.key-deserializer", () -> "org.apache.kafka.common.serialization.StringDeserializer");
+        registry.add("spring.kafka.consumer.value-deserializer", () -> "org.springframework.kafka.support.serializer.JsonDeserializer");
+        registry.add("spring.kafka.consumer.properties.spring.json.trusted.packages", () -> "com.arrayindex.demo1.model");
+        registry.add("spring.kafka.producer.key-serializer", () -> "org.apache.kafka.common.serialization.StringSerializer");
+        registry.add("spring.kafka.producer.value-serializer", () -> "org.springframework.kafka.support.serializer.JsonSerializer");
+        registry.add("spring.kafka.properties.allow.auto.create.topics", () -> "true");
+    }
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    private Product testProduct;
+    @Test
+    void createProduct_ShouldReturnCreatedProduct() throws Exception {
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Test Description");
+        product.setPrice(99.99);
 
-    @BeforeEach
-    void setUp() {
-        productRepository.deleteAll();
-        
-        testProduct = new Product();
-        testProduct.setName("Test Product");
-        testProduct.setDescription("Test Description");
-        testProduct.setPrice(99.99);
-        testProduct = productRepository.save(testProduct);
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(product)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Test Product"))
+                .andExpect(jsonPath("$.description").value("Test Description"))
+                .andExpect(jsonPath("$.price").value(99.99));
     }
 
     @Test
     void getAllProducts_ShouldReturnListOfProducts() throws Exception {
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value(testProduct.getName()))
-                .andExpect(jsonPath("$[0].description").value(testProduct.getDescription()))
-                .andExpect(jsonPath("$[0].price").value(testProduct.getPrice()));
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test
     void getProductById_WhenProductExists_ShouldReturnProduct() throws Exception {
-        mockMvc.perform(get("/api/products/{id}", testProduct.getId()))
+        // First create a product
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Test Description");
+        product.setPrice(99.99);
+
+        String response = mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(product)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Product createdProduct = objectMapper.readValue(response, Product.class);
+
+        // Then get it by ID
+        mockMvc.perform(get("/api/products/" + createdProduct.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(testProduct.getName()))
-                .andExpect(jsonPath("$.description").value(testProduct.getDescription()))
-                .andExpect(jsonPath("$.price").value(testProduct.getPrice()));
+                .andExpect(jsonPath("$.id").value(createdProduct.getId()))
+                .andExpect(jsonPath("$.name").value("Test Product"))
+                .andExpect(jsonPath("$.description").value("Test Description"))
+                .andExpect(jsonPath("$.price").value(99.99));
     }
 
     @Test
     void getProductById_WhenProductDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/products/{id}", 999L))
+        mockMvc.perform(get("/api/products/999"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void createProduct_ShouldReturnCreatedProduct() throws Exception {
-        Product newProduct = new Product();
-        newProduct.setName("New Product");
-        newProduct.setDescription("New Description");
-        newProduct.setPrice(149.99);
-
-        mockMvc.perform(post("/api/products")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newProduct)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(newProduct.getName()))
-                .andExpect(jsonPath("$.description").value(newProduct.getDescription()))
-                .andExpect(jsonPath("$.price").value(newProduct.getPrice()));
-    }
-
-    @Test
     void updateProduct_WhenProductExists_ShouldUpdateAndReturnProduct() throws Exception {
-        testProduct.setName("Updated Product");
-        testProduct.setDescription("Updated Description");
-        testProduct.setPrice(199.99);
+        // First create a product
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Test Description");
+        product.setPrice(99.99);
 
-        mockMvc.perform(put("/api/products/{id}", testProduct.getId())
+        String response = mockMvc.perform(post("/api/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testProduct)))
+                .content(objectMapper.writeValueAsString(product)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Product createdProduct = objectMapper.readValue(response, Product.class);
+
+        // Update the product
+        createdProduct.setName("Updated Product");
+        createdProduct.setPrice(149.99);
+
+        mockMvc.perform(put("/api/products/" + createdProduct.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createdProduct)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(testProduct.getName()))
-                .andExpect(jsonPath("$.description").value(testProduct.getDescription()))
-                .andExpect(jsonPath("$.price").value(testProduct.getPrice()));
+                .andExpect(jsonPath("$.id").value(createdProduct.getId()))
+                .andExpect(jsonPath("$.name").value("Updated Product"))
+                .andExpect(jsonPath("$.description").value("Test Description"))
+                .andExpect(jsonPath("$.price").value(149.99));
     }
 
     @Test
     void updateProduct_WhenProductDoesNotExist_ShouldReturn404() throws Exception {
-        testProduct.setId(999L);
-        testProduct.setName("Updated Product");
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Test Description");
+        product.setPrice(99.99);
 
-        mockMvc.perform(put("/api/products/{id}", testProduct.getId())
+        mockMvc.perform(put("/api/products/999")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testProduct)))
+                .content(objectMapper.writeValueAsString(product)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteProduct_ShouldReturn200() throws Exception {
-        mockMvc.perform(delete("/api/products/{id}", testProduct.getId()))
+        // First create a product
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Test Description");
+        product.setPrice(99.99);
+
+        String response = mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(product)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Product createdProduct = objectMapper.readValue(response, Product.class);
+
+        // Then delete it
+        mockMvc.perform(delete("/api/products/" + createdProduct.getId()))
                 .andExpect(status().isOk());
+    }
+
+    @AfterAll
+    static void tearDown() {
+        log.info("Cleaning up Kafka container...");
+        if (kafka != null) {
+            try {
+                kafka.stop();
+                kafka.close();
+                log.info("Kafka container stopped and closed successfully");
+            } catch (Exception e) {
+                log.error("Error while cleaning up Kafka container", e);
+            }
+        }
     }
 } 

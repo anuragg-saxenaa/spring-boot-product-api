@@ -2,17 +2,20 @@ package com.arrayindex.demo1.service;
 
 import com.arrayindex.demo1.model.Product;
 import com.arrayindex.demo1.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.arrayindex.demo1.exception.ProductNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
+    private final KafkaProducerService kafkaProducerService;
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
@@ -22,23 +25,27 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
+    @Transactional
     public Product createProduct(Product product) {
+        Product savedProduct = productRepository.save(product);
+        // Send to Kafka for asynchronous processing
+        kafkaProducerService.sendProduct(savedProduct);
+        return savedProduct;
+    }
+
+    @Transactional
+    public Product updateProduct(Long id, Product product) {
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException("Product not found with id: " + id);
+        }
+        product.setId(id);
         return productRepository.save(product);
     }
 
-    public Product updateProduct(Long id, Product productDetails) {
-        Optional<Product> product = productRepository.findById(id);
-        if (product.isPresent()) {
-            Product existingProduct = product.get();
-            existingProduct.setName(productDetails.getName());
-            existingProduct.setDescription(productDetails.getDescription());
-            existingProduct.setPrice(productDetails.getPrice());
-            return productRepository.save(existingProduct);
-        }
-        return null;
-    }
-
     public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException("Product not found with id: " + id);
+        }
         productRepository.deleteById(id);
     }
 } 

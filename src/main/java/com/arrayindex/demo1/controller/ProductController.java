@@ -45,12 +45,12 @@ public class ProductController {
 
     @Operation(summary = "Create new product", description = "Creates a new product in the system")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully created product")
+        @ApiResponse(responseCode = "201", description = "Successfully created product")
     })
     @PostMapping
-    public Product createProduct(
+    public ResponseEntity<Product> createProduct(
             @Parameter(description = "Product details to create") @RequestBody Product product) {
-        return productService.createProduct(product);
+        return ResponseEntity.status(201).body(productService.createProduct(product));
     }
 
     @Operation(summary = "Update product", description = "Updates an existing product by its ID")
