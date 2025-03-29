@@ -1,6 +1,6 @@
-# Spring Boot Product API
+# Product Management API
 
-This is a Spring Boot application that provides a RESTful API for managing products. It includes CRUD operations and is built with modern Spring Boot practices.
+A robust Spring Boot application that provides a RESTful API for managing products. This API includes comprehensive CRUD operations, built with modern Spring Boot practices and best practices for enterprise applications.
 
 ## Features
 
@@ -48,8 +48,8 @@ This project uses Git credential manager for secure authentication. To set it up
 
 1. Clone the repository:
    ```bash
-   git clone [repository-url]
-   cd demo1
+   git clone https://github.com/anuragg-saxenaa/product-management-api.git
+   cd product-management-api
    ```
 
 2. Build the project:

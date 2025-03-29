@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.arrayindex</groupId>
-    <artifactId>demo1</artifactId>
+    <artifactId>product-management-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>demo1</name>
-    <description>demo1</description>
+    <name>product-management-api</name>
+    <description>Product Management API with Spring Boot</description>
     <properties>
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>

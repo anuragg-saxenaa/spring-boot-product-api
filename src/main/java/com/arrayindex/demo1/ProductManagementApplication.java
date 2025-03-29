@@ -13,8 +13,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         description = "REST API for managing products"
     )
 )
-public class Demo1Application {
+public class ProductManagementApplication {
     public static void main(String[] args) {
-        SpringApplication.run(Demo1Application.class, args);
+        SpringApplication.run(ProductManagementApplication.class, args);
     }
 } 
