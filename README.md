@@ -1,145 +1,123 @@
 # Product Management API
 
-A robust Spring Boot application that provides a RESTful API for managing products. This API includes comprehensive CRUD operations, built with modern Spring Boot practices and best practices for enterprise applications.
+A Spring Boot application that provides a RESTful API for managing products with Kafka integration for event-driven architecture.
 
 ## Features
 
-- CRUD operations for Product entity
+- RESTful API for CRUD operations on products
 - H2 in-memory database
-- OpenAPI/Swagger documentation
-- Comprehensive test coverage (Unit & Integration tests)
-- RESTful API endpoints
-- Secure Git credential management
-- Kafka integration for asynchronous processing
-- Proper HTTP status codes for all operations
-- Global exception handling
+- Kafka integration for event-driven architecture
+- Swagger UI for API documentation
+- Comprehensive test coverage with TestContainers
+- Separate configurations for development and test environments
 
-## Technologies
+## Prerequisites
 
-- Java 21
-- Spring Boot 3.2.5
-- Spring Data JPA
-- H2 Database
-- Lombok
-- SpringDoc OpenAPI UI
+- Java 17 or higher
 - Maven
-- Apache Kafka
-- TestContainers
+- Docker (for running Kafka locally)
 
-## Getting Started
+## Project Structure
 
-### Prerequisites
+```
+src/
+├── main/
+│   └── java/
+│       └── com/
+│           └── arrayindex/
+│               └── productmanagementapi/
+│                   ├── controller/
+│                   ├── model/
+│                   ├── repository/
+│                   ├── service/
+│                   └── ProductManagementApplication.java
+└── test/
+    └── java/
+        └── com/
+            └── arrayindex/
+                └── productmanagementapi/
+                    ├── controller/
+                    └── service/
+```
 
-- Java 21 or higher
-- Maven 3.6 or higher
-- Git (with credential manager configured)
-- Docker (for running Kafka in tests)
+## Configuration
 
-### Git Setup
+The application uses different configurations for development and test environments:
 
-This project uses Git credential manager for secure authentication. To set it up:
+- Development: `src/main/resources/application.properties`
+- Test: `src/test/resources/application-test.properties`
 
-1. Configure Git to use the macOS keychain:
-   ```bash
-   git config --global credential.helper osxkeychain
-   ```
+## Running the Application
 
-2. The first time you push to GitHub, you'll be prompted for your credentials:
-   - Username: your GitHub username
-   - Password: your GitHub Personal Access Token (PAT)
+1. Start Kafka using Docker Compose:
+```bash
+docker-compose up -d
+```
 
-3. Your credentials will be securely stored in the macOS keychain for future use.
+2. Build and run the application:
+```bash
+mvn clean spring-boot:run
+```
 
-### Running the Application
+The application will be available at `http://localhost:8080`
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/anuragg-saxenaa/product-management-api.git
-   cd product-management-api
-   ```
+## API Documentation
 
-2. Build the project:
-   ```bash
-   mvn clean install
-   ```
+Once the application is running, you can access the Swagger UI at:
+`http://localhost:8080/swagger-ui.html`
 
-3. Run the application:
-   ```bash
-   mvn spring-boot:run
-   ```
+## Running Tests
 
-The application will start on `http://localhost:8080`
-
-### API Documentation
-
-Once the application is running, you can access the API documentation at:
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-
-## API Endpoints
-
-### Products API
-
-- GET `/api/products` - Get all products (200 OK)
-- GET `/api/products/{id}` - Get a product by ID (200 OK, 404 Not Found)
-- POST `/api/products` - Create a new product (201 Created)
-- PUT `/api/products/{id}` - Update a product (200 OK, 404 Not Found)
-- DELETE `/api/products/{id}` - Delete a product (200 OK, 404 Not Found)
-
-## Database
-
-The application uses H2 in-memory database. You can access the H2 console at:
-`http://localhost:8080/h2-console`
-
-Database Configuration:
-- JDBC URL: `jdbc:h2:mem:testdb`
-- Username: `sa`
-- Password: (empty)
-
-## Kafka Integration
-
-The application uses Kafka for asynchronous processing of product operations. Kafka configuration is handled through Spring profiles:
-
-- Development: Uses the default Kafka configuration
-- Test: Uses TestContainers for running Kafka in tests
-
-### Kafka Topics
-- `products`: Topic for product-related events
-
-## Testing
-
-The project includes comprehensive test coverage with:
-- Unit tests for service layer
-- Integration tests for controller layer
-- Kafka integration tests using TestContainers
-
-To run the tests:
-
+Run the test suite:
 ```bash
 mvn test
 ```
 
-## Error Handling
+The tests use TestContainers to create an isolated Kafka instance for testing.
 
-The application includes a global exception handler that provides consistent error responses:
-- 404 Not Found: When a product is not found
-- 400 Bad Request: For invalid input
-- 500 Internal Server Error: For unexpected errors
+## API Endpoints
 
-## Recent Changes
+- `GET /api/products` - Get all products
+- `GET /api/products/{id}` - Get a product by ID
+- `POST /api/products` - Create a new product
+- `PUT /api/products/{id}` - Update an existing product
+- `DELETE /api/products/{id}` - Delete a product
 
-- Added Kafka integration for asynchronous processing
-- Implemented proper HTTP status codes for all operations
-- Added global exception handling
-- Enhanced test coverage with Kafka integration tests
-- Improved error handling with custom exceptions
+## Development
+
+### Project Setup
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd product-management-api
+```
+
+2. Build the project:
+```bash
+mvn clean install
+```
+
+### Development Environment
+
+The development environment uses:
+- H2 in-memory database
+- Local Kafka instance
+- Swagger UI for API documentation
+
+### Test Environment
+
+The test environment uses:
+- H2 in-memory database
+- TestContainers for Kafka
+- Disabled Swagger UI
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ## License

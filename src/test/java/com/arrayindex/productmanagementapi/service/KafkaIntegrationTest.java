@@ -1,5 +1,6 @@
 package com.arrayindex.productmanagementapi.service;
 
+import com.arrayindex.productmanagementapi.ProductManagementApplication;
 import com.arrayindex.productmanagementapi.model.Product;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -7,19 +8,21 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.math.BigDecimal;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@SpringBootTest
-@DirtiesContext
+@SpringBootTest(classes = ProductManagementApplication.class)
+@ActiveProfiles("test")
 class KafkaIntegrationTest {
 
     private static final KafkaContainer kafka = new KafkaContainer(
