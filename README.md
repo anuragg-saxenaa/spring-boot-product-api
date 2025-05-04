@@ -8,7 +8,7 @@ A Spring Boot application that provides a RESTful API for managing products with
 - H2 in-memory database
 - Kafka integration for event-driven architecture
 - Swagger UI for API documentation
-- Comprehensive test coverage with TestContainers
+- Comprehensive test coverage
 - Separate configurations for development and test environments
 
 ## Prerequisites
@@ -94,8 +94,7 @@ The application will start on `http://localhost:8080`
 
 ### Prerequisites for Tests
 
-1. Make sure Docker is running
-2. Ensure you have enough memory allocated to Docker (recommended: 4GB minimum)
+No external dependencies required. Tests use embedded Kafka.
 
 ### Running All Tests
 
@@ -137,7 +136,7 @@ The report will be available at: `target/site/jacoco/index.html`
 
 The test environment uses:
 - H2 in-memory database
-- TestContainers for Kafka
+- Local Kafka instance
 - Disabled Swagger UI
 - Separate test configuration file
 
@@ -208,4 +207,4 @@ The test environment uses:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.

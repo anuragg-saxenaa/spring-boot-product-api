@@ -1,24 +1,19 @@
 package com.arrayindex.productmanagementapi.controller;
 
 import com.arrayindex.productmanagementapi.ProductManagementApplication;
+import com.arrayindex.productmanagementapi.config.EmbeddedKafkaConfig;
 import com.arrayindex.productmanagementapi.model.Product;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.utility.DockerImageName;
-
-import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -27,28 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = ProductManagementApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(EmbeddedKafkaConfig.class)
+@EmbeddedKafka(partitions = 1, topics = {"products"})
 class ProductControllerIntegrationTest {
-
-    private static final KafkaContainer kafka = new KafkaContainer(
-        DockerImageName.parse("confluentinc/cp-kafka:7.5.1")
-    );
-
-    @DynamicPropertySource
-    static void kafkaProperties(DynamicPropertyRegistry registry) {
-        log.info("Starting Kafka container...");
-        kafka.start();
-        String bootstrapServers = kafka.getBootstrapServers();
-        log.info("Kafka bootstrap servers: {}", bootstrapServers);
-        registry.add("spring.kafka.bootstrap-servers", () -> bootstrapServers);
-        registry.add("spring.kafka.consumer.group-id", () -> "product-group");
-        registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
-        registry.add("spring.kafka.consumer.key-deserializer", () -> "org.apache.kafka.common.serialization.StringDeserializer");
-        registry.add("spring.kafka.consumer.value-deserializer", () -> "org.springframework.kafka.support.serializer.JsonDeserializer");
-        registry.add("spring.kafka.consumer.properties.spring.json.trusted.packages", () -> "com.arrayindex.productmanagementapi.model");
-        registry.add("spring.kafka.producer.key-serializer", () -> "org.apache.kafka.common.serialization.StringSerializer");
-        registry.add("spring.kafka.producer.value-serializer", () -> "org.springframework.kafka.support.serializer.JsonSerializer");
-        registry.add("spring.kafka.properties.allow.auto.create.topics", () -> "true");
-    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -180,17 +156,5 @@ class ProductControllerIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    @AfterAll
-    static void tearDown() {
-        log.info("Cleaning up Kafka container...");
-        if (kafka != null) {
-            try {
-                kafka.stop();
-                kafka.close();
-                log.info("Kafka container stopped and closed successfully");
-            } catch (Exception e) {
-                log.error("Error while cleaning up Kafka container", e);
-            }
-        }
-    }
-} 
+
+}

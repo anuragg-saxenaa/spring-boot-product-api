@@ -4,7 +4,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -13,6 +13,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import com.arrayindex.productmanagementapi.model.Product;
 
 import java.util.HashMap;
@@ -22,8 +23,8 @@ import java.util.Map;
 @Profile("test")
 public class TestKafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    @Autowired(required = false)
+    private EmbeddedKafkaBroker embeddedKafkaBroker;
 
     @Bean
     @Primary
@@ -35,7 +36,9 @@ public class TestKafkaConfig {
     @Primary
     public ProducerFactory<String, Product> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        if (embeddedKafkaBroker != null) {
+            configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedKafkaBroker.getBrokersAsString());
+        }
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -53,7 +56,9 @@ public class TestKafkaConfig {
     @Primary
     public ConsumerFactory<String, Product> consumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        if (embeddedKafkaBroker != null) {
+            configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedKafkaBroker.getBrokersAsString());
+        }
         configProps.put("key.deserializer", StringDeserializer.class);
         configProps.put("value.deserializer", JsonDeserializer.class);
         configProps.put("group.id", "product-group");
@@ -65,10 +70,10 @@ public class TestKafkaConfig {
     @Bean
     @Primary
     public ConcurrentKafkaListenerContainerFactory<String, Product> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, Product> factory = 
+        ConcurrentKafkaListenerContainerFactory<String, Product> factory =
             new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(1);
         return factory;
     }
-} 
+}
