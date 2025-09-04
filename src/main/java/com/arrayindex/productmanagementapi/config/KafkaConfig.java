@@ -2,6 +2,7 @@ package com.arrayindex.productmanagementapi.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,12 +49,13 @@ public class KafkaConfig {
     @Bean
     public ConsumerFactory<String, Product> consumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put("key.deserializer", StringDeserializer.class);
-        configProps.put("value.deserializer", JsonDeserializer.class);
-        configProps.put("group.id", "product-group");
-        configProps.put("auto.offset.reset", "earliest");
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "product-group");
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.arrayindex.productmanagementapi.model");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, Product.class);
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 

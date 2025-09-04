@@ -197,13 +197,81 @@ The test environment uses:
 - TestContainers for Kafka
 - Disabled Swagger UI
 
+## Automated PR Reviews (Cursor CLI)
+
+This repository includes automated code review using Cursor CLI that runs on every pull request. The system analyzes code changes and provides intelligent feedback focusing on Java/Spring Boot best practices.
+
+### What the Action Does
+
+- **Automated Analysis**: Reviews PR diffs using AI-powered analysis
+- **Spring Boot Focus**: Specialized rules for Java, Spring Boot, JPA/Hibernate, and Kafka
+- **Inline Comments**: Posts specific feedback directly on changed lines
+- **Smart Detection**: Identifies security issues, performance problems, and code quality concerns
+- **Non-Blocking**: Provides advisory feedback without blocking PR merges
+
+### Setup Requirements
+
+To enable automated reviews, add the following secret to your repository:
+
+1. Go to Settings → Secrets and variables → Actions
+2. Add a new secret named `CURSOR_API_KEY`
+3. Set the value to your Cursor API key (obtain from your Cursor account)
+
+### Review Focus Areas
+
+The automated reviewer checks for:
+
+- 🔒 **Security**: SQL injection, authentication issues, data exposure
+- ⚡ **Performance**: N+1 queries, inefficient loops, resource management
+- ✨ **Spring Best Practices**: Dependency injection, transactions, configuration
+- ⚠️ **Error Handling**: Exception management, meaningful error messages
+- 🛡️ **Data Validation**: Input validation, null safety, constraints
+- 🌐 **API Design**: REST conventions, HTTP status codes, response structure
+- 🧪 **Testing**: Coverage, patterns, maintainability
+- 📋 **Code Quality**: SOLID principles, clean code practices
+
+### Running Locally
+
+To run code review locally using Cursor CLI:
+
+```bash
+# Install Cursor CLI
+curl https://cursor.com/install -fsS | bash
+
+# Set your API key
+export CURSOR_API_KEY="your-api-key-here"
+
+# Review current changes
+cursor-agent --model "gpt-4" --print "Review the current git diff for Java/Spring Boot best practices"
+```
+
+### Customizing Review Rules
+
+Review rules can be customized by editing `.cursor/review-rules.md`. The current configuration focuses on:
+
+- Java 17 and Spring Boot patterns
+- Maven project structure
+- JPA/Hibernate best practices
+- Kafka integration patterns
+- Docker deployment considerations
+
+### Workflow Configuration
+
+The review workflow (`.github/workflows/cursor-code-review.yml`) triggers on:
+- Pull request opened
+- Pull request synchronized (new commits)
+- Pull request reopened
+- Pull request marked ready for review
+
+Reviews are limited to a maximum of 10 inline comments per PR, prioritizing the most critical issues.
+
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+5. Open a Pull Request (automated review will run automatically)
 
 ## License
 
