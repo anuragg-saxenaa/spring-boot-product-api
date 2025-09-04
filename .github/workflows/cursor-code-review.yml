@@ -40,18 +40,26 @@ jobs:
         timeout-minutes: 2
         run: |
           # Use timeout and pipe to prevent hanging
-          echo "Review this Java Spring Boot PR diff and post exactly 5 inline comments for the most critical issues.
+          echo "Review this Java Spring Boot PR diff and post INLINE comments on specific lines of code.
 
           PR: ${{ github.event.pull_request.number }} in ${{ github.repository }}
 
-          Steps:
-          1. Read the diff from pr_diff.txt
-          2. Identify top 5 critical issues (security, performance, Spring anti-patterns)  
-          3. Post review: gh pr review ${{ github.event.pull_request.number }} --comment
-          4. Print 'REVIEW_COMPLETE' and exit
+          CRITICAL: Use INLINE comments, NOT summary comments!
 
-          Focus: 🔒 Security bugs, ⚡ Performance issues, ✨ Spring Boot best practices
-          Format: Short actionable comments with emojis" | timeout 90 cursor-agent --force --model "auto" --output-format=text || echo "Review completed or timed out"
+          Steps:
+          1. Read the diff: cat pr_diff.txt
+          2. Find 5 critical issues in the code
+          3. For each issue, post an INLINE comment on the exact line using:
+             gh pr review ${{ github.event.pull_request.number }} --body 'inline comment text' --path 'file/path' --line LINE_NUMBER
+          4. Do NOT use general --comment flag
+          5. Exit after posting inline comments
+
+          Example commands:
+          gh pr review ${{ github.event.pull_request.number }} --body '🔒 SQL injection vulnerability: Use parameterized queries' --path 'src/main/java/...' --line 35
+          gh pr review ${{ github.event.pull_request.number }} --body '⚡ N+1 query detected: Optimize with JOIN' --path 'src/main/java/...' --line 67
+
+          Focus: 🔒 Security, ⚡ Performance, ✨ Best practices
+          Format: Specific line-by-line feedback with file paths and line numbers" | timeout 90 cursor-agent --force --model "auto" --output-format=text || echo "Review completed or timed out"
 
       - name: Cleanup and confirm completion
         run: |
