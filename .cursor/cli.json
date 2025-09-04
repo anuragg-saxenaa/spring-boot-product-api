@@ -1,5 +1,11 @@
 {
   "permissions": {
+    "allow": [
+      "Shell(gh pr view)",
+      "Shell(gh pr diff)",
+      "Shell(gh pr review)",
+      "Read(**)"
+    ],
     "deny": [
       "Shell(git push)",
       "Shell(gh pr create)",
