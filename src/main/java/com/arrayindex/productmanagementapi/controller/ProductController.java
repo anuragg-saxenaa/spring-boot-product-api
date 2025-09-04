@@ -38,6 +38,10 @@ public class ProductController {
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(
             @Parameter(description = "ID of the product to retrieve") @PathVariable Long id) {
+        // Potential security issue: no input validation
+        if (id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
         return productService.getProductById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -50,6 +54,10 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Product> createProduct(
             @Parameter(description = "Product details to create") @RequestBody Product product) {
+        // TODO: Add input validation - this should trigger a review comment
+        if (product.getName() == null || product.getName().isEmpty()) {
+            throw new RuntimeException("Product name cannot be null or empty");
+        }
         return ResponseEntity.status(201).body(productService.createProduct(product));
     }
 
@@ -75,5 +83,15 @@ public class ProductController {
             @Parameter(description = "ID of the product to delete") @PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
+    }
+
+    // New test endpoint with intentional issues for automated review demo
+    @GetMapping("/search")
+    public List<Product> searchProducts(@RequestParam String query) {
+        // Issue 1: No null validation
+        // Issue 2: No SQL injection protection shown
+        // Issue 3: No pagination for potentially large results
+        System.out.println("Searching for: " + query); // Issue 4: Using System.out instead of logger
+        return productService.getAllProducts(); // Issue 5: Not actually using the search query
     }
 } 
