@@ -30,6 +30,7 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ github.token }}
+        timeout-minutes: 3
         run: |
           cursor-agent --force --model "auto" --output-format=text --print "You are a code reviewer for Java Spring Boot. Review this PR diff and post inline comments for critical issues only.
 
@@ -38,11 +39,14 @@ jobs:
           Tasks:
           1. Get PR diff: gh pr diff ${{ github.event.pull_request.number }}
           2. Review for: security bugs, performance issues, Spring Boot anti-patterns
-          3. Post max 5 comments on most critical issues: gh pr review ${{ github.event.pull_request.number }} --comment
+          3. Post max 5 comments: gh pr review ${{ github.event.pull_request.number }} --comment
+          4. Exit immediately after posting comments
 
           Focus on:
           - 🔒 Security: Input validation, SQL injection
           - ⚡ Performance: N+1 queries, missing pagination  
           - ✨ Best practices: Proper exception handling, logging
           
-          Keep comments short and actionable. Use emojis for severity."
+          Keep comments short and actionable. Use emojis for severity.
+          
+          IMPORTANT: After posting review comments, exit immediately. Do not generate additional reports or summaries."
