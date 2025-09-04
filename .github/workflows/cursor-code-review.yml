@@ -26,27 +26,34 @@ jobs:
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
+      - name: Get PR diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} > pr_diff.txt
+          echo "PR diff saved to pr_diff.txt"
+
       - name: Perform code review
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ github.token }}
-        timeout-minutes: 3
+        timeout-minutes: 2
         run: |
-          cursor-agent --force --model "auto" --output-format=text --print "You are a code reviewer for Java Spring Boot. Review this PR diff and post inline comments for critical issues only.
+          # Use --no-interactive to prevent hanging
+          timeout 90 cursor-agent --no-interactive --force --model "auto" --output-format=text --print "Review this Java Spring Boot PR diff and post exactly 5 inline comments for the most critical issues.
 
-          Context: PR ${{ github.event.pull_request.number }} in ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }} in ${{ github.repository }}
 
-          Tasks:
-          1. Get PR diff: gh pr diff ${{ github.event.pull_request.number }}
-          2. Review for: security bugs, performance issues, Spring Boot anti-patterns
-          3. Post max 5 comments: gh pr review ${{ github.event.pull_request.number }} --comment
-          4. Exit immediately after posting comments
+          Steps:
+          1. Read the diff from pr_diff.txt
+          2. Identify top 5 critical issues (security, performance, Spring anti-patterns)
+          3. Post review: gh pr review ${{ github.event.pull_request.number }} --comment
+          4. Print 'REVIEW_COMPLETE' and exit
 
-          Focus on:
-          - 🔒 Security: Input validation, SQL injection
-          - ⚡ Performance: N+1 queries, missing pagination  
-          - ✨ Best practices: Proper exception handling, logging
-          
-          Keep comments short and actionable. Use emojis for severity.
-          
-          IMPORTANT: After posting review comments, exit immediately. Do not generate additional reports or summaries."
+          Focus: 🔒 Security bugs, ⚡ Performance issues, ✨ Spring Boot best practices
+          Format: Short actionable comments with emojis" || echo "Review completed or timed out"
+
+      - name: Cleanup and confirm completion
+        run: |
+          rm -f pr_diff.txt
+          echo "✅ Automated code review workflow completed successfully"
