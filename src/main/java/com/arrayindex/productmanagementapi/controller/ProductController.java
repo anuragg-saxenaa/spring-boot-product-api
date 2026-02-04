@@ -125,6 +125,16 @@ public class ProductController {
         return ResponseEntity.ok(productService.searchProductsByName(name));
     }
 
+    @GetMapping("/search/description")
+    @Operation(summary = "Search products by description", description = "Search products by description (case-insensitive)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved products")
+    })
+    public ResponseEntity<List<Product>> searchProductsByDescription(
+            @Parameter(description = "Description keyword to search") @RequestParam String description) {
+        return ResponseEntity.ok(productService.searchProductsByDescription(description));
+    }
+
     @Operation(summary = "Get products by price range", description = "Retrieves products within a specific price range")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved products")

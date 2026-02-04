@@ -148,6 +148,12 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(name);
     }
 
+    @Cacheable(value = "productsByDescription", key = "#description")
+    public List<Product> searchProductsByDescription(String description) {
+        log.info("Searching products by description: {}", description);
+        return productRepository.findByDescriptionContainingIgnoreCase(description);
+    }
+
     public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
         log.info("Fetching products by price range: {} - {}", minPrice, maxPrice);
         return productRepository.findByPriceBetween(minPrice, maxPrice);

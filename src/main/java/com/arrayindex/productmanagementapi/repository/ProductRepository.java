@@ -22,6 +22,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     
     List<Product> findByNameContainingIgnoreCase(String name);
     
+    List<Product> findByDescriptionContainingIgnoreCase(String description);
+    
     List<Product> findByPriceBetween(Double minPrice, Double maxPrice);
     
     @Query("SELECT p FROM Product p WHERE " +
