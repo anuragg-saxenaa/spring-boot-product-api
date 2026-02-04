@@ -204,9 +204,11 @@ public class ProductService {
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
-        product.setCategory(dto.getCategory());
-        product.setStockQuantity(dto.getStockQuantity());
-        product.setSku(dto.getSku());
+        
+        // Handle backward compatibility - provide defaults for new fields
+        product.setCategory(dto.getCategory() != null ? dto.getCategory() : "Uncategorized");
+        product.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
+        product.setSku(dto.getSku()); // Will be auto-generated if null
         product.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return product;
     }

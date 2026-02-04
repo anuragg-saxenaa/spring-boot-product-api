@@ -29,22 +29,22 @@ public class Product {
     @Column(nullable = false)
     private Double price;
     
-    @Column(name = "category", nullable = false)
+    @Column(name = "category")
     private String category;
     
-    @Column(name = "stock_quantity", nullable = false)
+    @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
     
-    @Column(name = "sku", unique = true, nullable = false)
+    @Column(name = "sku", unique = true)
     private String sku;
     
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_active")
     private Boolean isActive = true;
     
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
