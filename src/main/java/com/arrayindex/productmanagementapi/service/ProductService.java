@@ -1,61 +1,101 @@
 package com.arrayindex.productmanagementapi.service;
 
-import com.arrayindex.productmanagementapi.model.Product;
-import com.arrayindex.productmanagementapi.repository.ProductRepository;
+import com.arrayindex.productmanagementapi.dto.ProductDTO;
+import com.arrayindex.productmanagementapi.dto.ProductSearchDTO;
 import com.arrayindex.productmanagementapi.exception.ProductNotFoundException;
+import com.arrayindex.productmanagementapi.exception.InsufficientStockException;
+import com.arrayindex.productmanagementapi.exception.DuplicateSkuException;
+import com.arrayindex.productmanagementapi.model.Product;
+import com.arrayindex.productmanagementapi.model.PriceHistory;
+import com.arrayindex.productmanagementapi.repository.ProductRepository;
+import com.arrayindex.productmanagementapi.repository.PriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final PriceHistoryRepository priceHistoryRepository;
     private final KafkaProducerService kafkaProducerService;
 
-    // Basic CRUD operations
     @Cacheable(value = "products", key = "'all'")
     public List<Product> getAllProducts() {
-        log.debug("Fetching all products");
+        log.info("Fetching all products");
         return productRepository.findAll();
     }
 
     @Cacheable(value = "productById", key = "#id")
     public Optional<Product> getProductById(Long id) {
-        log.debug("Fetching product with id: {}", id);
+        log.info("Fetching product with id: {}", id);
         return productRepository.findById(id);
     }
 
-    @Transactional
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
-    public Product createProduct(Product product) {
-        log.info("Creating new product: {}", product.getName());
+    public Product createProduct(ProductDTO productDTO) {
+        log.info("Creating new product: {}", productDTO.getName());
+        
+        // Check for duplicate SKU
+        if (productDTO.getSku() != null && productRepository.findBySku(productDTO.getSku()).isPresent()) {
+            throw new DuplicateSkuException("Product with SKU " + productDTO.getSku() + " already exists");
+        }
+        
+        Product product = convertToEntity(productDTO);
         Product savedProduct = productRepository.save(product);
+        
+        // Send to Kafka for asynchronous processing
         kafkaProducerService.sendProduct(savedProduct);
+        
         log.info("Product created successfully with id: {}", savedProduct.getId());
         return savedProduct;
     }
 
     @Transactional
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
-    public Product updateProduct(Long id, Product product) {
+    public Product updateProduct(Long id, ProductDTO productDTO) {
         log.info("Updating product with id: {}", id);
-        if (!productRepository.existsById(id)) {
-            throw new ProductNotFoundException("Product not found with id: " + id);
+        
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        
+        // Check for duplicate SKU if SKU is being changed
+        if (productDTO.getSku() != null && !existingProduct.getSku().equals(productDTO.getSku())) {
+            if (productRepository.findBySku(productDTO.getSku()).isPresent()) {
+                throw new DuplicateSkuException("Product with SKU " + productDTO.getSku() + " already exists");
+            }
         }
-        product.setId(id);
-        Product updatedProduct = productRepository.save(product);
+        
+        // Track price changes
+        if (productDTO.getPrice() != null && !existingProduct.getPrice().equals(productDTO.getPrice())) {
+            PriceHistory priceHistory = new PriceHistory();
+            priceHistory.setProduct(existingProduct);
+            priceHistory.setOldPrice(existingProduct.getPrice());
+            priceHistory.setNewPrice(productDTO.getPrice());
+            priceHistory.setChangeReason("Product update");
+            priceHistoryRepository.save(priceHistory);
+        }
+        
+        updateEntity(existingProduct, productDTO);
+        Product updatedProduct = productRepository.save(existingProduct);
+        
         kafkaProducerService.sendProduct(updatedProduct);
+        
         log.info("Product updated successfully with id: {}", id);
         return updatedProduct;
     }
@@ -63,144 +103,121 @@ public class ProductService {
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
     public void deleteProduct(Long id) {
         log.info("Deleting product with id: {}", id);
+        
         if (!productRepository.existsById(id)) {
             throw new ProductNotFoundException("Product not found with id: " + id);
         }
+        
         productRepository.deleteById(id);
         log.info("Product deleted successfully with id: {}", id);
     }
 
-    // Enhanced search and filtering methods
+    public Page<Product> searchProducts(ProductSearchDTO searchDTO) {
+        log.info("Searching products with criteria: {}", searchDTO);
+        
+        Sort.Direction direction = searchDTO.getSortDirection().equalsIgnoreCase("DESC") 
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = Sort.by(direction, searchDTO.getSortBy());
+        Pageable pageable = PageRequest.of(searchDTO.getPage(), searchDTO.getSize(), sort);
+        
+        return productRepository.findBySearchCriteria(
+                searchDTO.getName(),
+                searchDTO.getCategory(),
+                searchDTO.getMinPrice(),
+                searchDTO.getMaxPrice(),
+                searchDTO.getIsActive(),
+                pageable
+        );
+    }
+
+    @Cacheable(value = "productsByCategory", key = "#category")
+    public List<Product> getProductsByCategory(String category) {
+        log.info("Fetching products by category: {}", category);
+        return productRepository.findByCategory(category);
+    }
+
+    @Cacheable(value = "activeProducts")
+    public List<Product> getActiveProducts() {
+        log.info("Fetching active products");
+        return productRepository.findByIsActiveTrue();
+    }
+
     @Cacheable(value = "productsByName", key = "#name")
     public List<Product> searchProductsByName(String name) {
-        log.debug("Searching products by name: {}", name);
+        log.info("Searching products by name: {}", name);
         return productRepository.findByNameContainingIgnoreCase(name);
     }
 
-    @Cacheable(value = "productsByPriceRange", key = "#minPrice + '-' + #maxPrice")
     public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
-        log.debug("Fetching products by price range: {} - {}", minPrice, maxPrice);
+        log.info("Fetching products by price range: {} - {}", minPrice, maxPrice);
         return productRepository.findByPriceBetween(minPrice, maxPrice);
     }
 
-    public List<Product> findByNameAndPriceRange(String name, Double minPrice, Double maxPrice) {
-        log.debug("Advanced search - name: {}, price range: {} - {}", name, minPrice, maxPrice);
-        return productRepository.findByNameAndPriceRange(name, minPrice, maxPrice);
+    public List<Product> getLowStockProducts(Integer threshold) {
+        log.info("Fetching products with stock below threshold: {}", threshold);
+        return productRepository.findLowStockProducts(threshold);
     }
 
-    public List<Product> getProductsOrderedByPrice(String direction) {
-        log.debug("Fetching products ordered by price: {}", direction);
-        if ("DESC".equalsIgnoreCase(direction)) {
-            return productRepository.findAllByOrderByPriceDesc();
-        } else {
-            return productRepository.findAllByOrderByPriceAsc();
-        }
+    public List<Object[]> getProductsCountByCategory() {
+        log.info("Fetching product count by category");
+        return productRepository.countProductsByCategory();
     }
 
-    public List<Product> getProductsOrderedByName() {
-        log.debug("Fetching products ordered by name");
-        return productRepository.findAllByOrderByNameAsc();
+    public List<Product> getRecentlyAddedProducts(int limit) {
+        log.info("Fetching recently added products, limit: {}", limit);
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return productRepository.findRecentlyAddedProducts(pageable);
     }
 
-    public boolean existsByNameIgnoreCase(String name) {
-        log.debug("Checking if product exists by name: {}", name);
-        return productRepository.existsByNameIgnoreCase(name);
-    }
-
-    public long countProductsByPriceRange(Double minPrice, Double maxPrice) {
-        log.debug("Counting products by price range: {} - {}", minPrice, maxPrice);
-        return productRepository.countByPriceRange(minPrice, maxPrice);
-    }
-
-    public long countTotalProducts() {
-        log.debug("Counting total products");
-        return productRepository.countTotalProducts();
-    }
-
-    public List<Product> searchProductsByDescription(String keyword) {
-        log.debug("Searching products by description keyword: {}", keyword);
-        return productRepository.findByDescriptionContaining(keyword);
-    }
-
-    public List<Product> getProductsByPriceGreaterThan(Double price) {
-        log.debug("Fetching products with price greater than: {}", price);
-        return productRepository.findByPriceGreaterThan(price);
-    }
-
-    public List<Product> getProductsByPriceLessThan(Double price) {
-        log.debug("Fetching products with price less than: {}", price);
-        return productRepository.findByPriceLessThan(price);
-    }
-
-    public List<Product> getProductsByPriceGreaterThanEqual(Double price) {
-        log.debug("Fetching products with price greater than or equal to: {}", price);
-        return productRepository.findByPriceGreaterThanEqual(price);
-    }
-
-    public List<Product> getProductsByPriceLessThanEqual(Double price) {
-        log.debug("Fetching products with price less than or equal to: {}", price);
-        return productRepository.findByPriceLessThanEqual(price);
-    }
-
-    // Advanced analytics and statistics
-    public Map<String, Object> getProductStatistics() {
-        log.info("Generating product statistics");
-        Map<String, Object> statistics = new HashMap<>();
-        
-        // Total count
-        statistics.put("totalProducts", countTotalProducts());
-        
-        // Price range distribution
-        Map<String, Long> priceRanges = new HashMap<>();
-        priceRanges.put("0-50", countProductsByPriceRange(0.0, 50.0));
-        priceRanges.put("50-100", countProductsByPriceRange(50.0, 100.0));
-        priceRanges.put("100-500", countProductsByPriceRange(100.0, 500.0));
-        priceRanges.put("500+", countProductsByPriceRange(500.0, Double.MAX_VALUE));
-        statistics.put("priceRangeDistribution", priceRanges);
-        
-        // Price statistics
-        List<Product> allProducts = getAllProducts();
-        if (!allProducts.isEmpty()) {
-            double minPrice = allProducts.stream().mapToDouble(Product::getPrice).min().orElse(0.0);
-            double maxPrice = allProducts.stream().mapToDouble(Product::getPrice).max().orElse(0.0);
-            double avgPrice = allProducts.stream().mapToDouble(Product::getPrice).average().orElse(0.0);
-            
-            Map<String, Double> priceStats = new HashMap<>();
-            priceStats.put("min", minPrice);
-            priceStats.put("max", maxPrice);
-            priceStats.put("average", avgPrice);
-            statistics.put("priceStatistics", priceStats);
-        }
-        
-        return statistics;
-    }
-
-    // Helper method for bulk operations
     @Transactional
-    public Map<String, Integer> bulkDeleteProducts(List<Long> productIds) {
-        log.info("Performing bulk delete for {} products", productIds.size());
-        int deletedCount = 0;
-        int notFoundCount = 0;
+    public Product updateStock(Long id, Integer quantity, String operation) {
+        log.info("Updating stock for product {}: {} {}", id, operation, quantity);
         
-        for (Long id : productIds) {
-            try {
-                if (productRepository.existsById(id)) {
-                    productRepository.deleteById(id);
-                    deletedCount++;
-                } else {
-                    notFoundCount++;
-                }
-            } catch (Exception e) {
-                log.error("Error deleting product with id: {}", id, e);
-                notFoundCount++;
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        
+        if ("INCREASE".equalsIgnoreCase(operation)) {
+            product.setStockQuantity(product.getStockQuantity() + quantity);
+        } else if ("DECREASE".equalsIgnoreCase(operation)) {
+            if (product.getStockQuantity() < quantity) {
+                throw new InsufficientStockException("Insufficient stock. Available: " + product.getStockQuantity() + ", Requested: " + quantity);
             }
+            product.setStockQuantity(product.getStockQuantity() - quantity);
+        } else {
+            throw new IllegalArgumentException("Invalid operation. Use 'INCREASE' or 'DECREASE'");
         }
         
-        Map<String, Integer> result = new HashMap<>();
-        result.put("deletedCount", deletedCount);
-        result.put("notFoundCount", notFoundCount);
+        Product updatedProduct = productRepository.save(product);
+        kafkaProducerService.sendProduct(updatedProduct);
         
-        log.info("Bulk delete completed. Deleted: {}, Not found: {}", deletedCount, notFoundCount);
-        return result;
+        log.info("Stock updated successfully for product {}. New stock: {}", id, updatedProduct.getStockQuantity());
+        return updatedProduct;
+    }
+
+    public List<PriceHistory> getProductPriceHistory(Long productId) {
+        log.info("Fetching price history for product: {}", productId);
+        return priceHistoryRepository.findByProductIdOrderByChangedAtDesc(productId);
+    }
+
+    private Product convertToEntity(ProductDTO dto) {
+        Product product = new Product();
+        product.setName(dto.getName());
+        product.setDescription(dto.getDescription());
+        product.setPrice(dto.getPrice());
+        product.setCategory(dto.getCategory());
+        product.setStockQuantity(dto.getStockQuantity());
+        product.setSku(dto.getSku());
+        product.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+        return product;
+    }
+
+    private void updateEntity(Product product, ProductDTO dto) {
+        if (dto.getName() != null) product.setName(dto.getName());
+        if (dto.getDescription() != null) product.setDescription(dto.getDescription());
+        if (dto.getPrice() != null) product.setPrice(dto.getPrice());
+        if (dto.getCategory() != null) product.setCategory(dto.getCategory());
+        if (dto.getStockQuantity() != null) product.setStockQuantity(dto.getStockQuantity());
+        if (dto.getSku() != null) product.setSku(dto.getSku());
+        if (dto.getIsActive() != null) product.setIsActive(dto.getIsActive());
     }
 }
