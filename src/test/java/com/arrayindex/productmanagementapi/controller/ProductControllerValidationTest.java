@@ -207,7 +207,7 @@ class ProductControllerValidationTest {
     @DisplayName("Should handle special characters in input")
     void createProduct_WithSpecialCharacters_ShouldHandleGracefully() throws Exception {
         Product product = new Product();
-        product.setName("Test <Product> & "more"");
+        product.setName("Test <Product> & more");
         product.setDescription("Description with <script>alert('xss')</script>");
         product.setPrice(99.99);
 
