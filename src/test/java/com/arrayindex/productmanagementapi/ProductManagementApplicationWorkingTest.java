@@ -5,6 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 @TestPropertySource(properties = {
     "spring.kafka.enabled=false",
     "spring.redis.host=localhost",
