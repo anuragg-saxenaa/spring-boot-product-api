@@ -9,8 +9,7 @@ import com.arrayindex.productmanagementapi.model.Product;
 import com.arrayindex.productmanagementapi.model.PriceHistory;
 import com.arrayindex.productmanagementapi.repository.ProductRepository;
 import com.arrayindex.productmanagementapi.repository.PriceHistoryRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -26,34 +25,65 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final PriceHistoryRepository priceHistoryRepository;
     private final KafkaProducerService kafkaProducerService;
+    private final AIModelService aiModelService;
+
+    @Autowired
+    public ProductService(ProductRepository productRepository, 
+                         PriceHistoryRepository priceHistoryRepository,
+                         KafkaProducerService kafkaProducerService,
+                         AIModelService aiModelService) {
+        this.productRepository = productRepository;
+        this.priceHistoryRepository = priceHistoryRepository;
+        this.kafkaProducerService = kafkaProducerService;
+        this.aiModelService = aiModelService;
+    }
 
     @Cacheable(value = "products", key = "'all'")
     public List<Product> getAllProducts() {
-        log.info("Fetching all products");
+        System.out.println("Fetching all products");
         return productRepository.findAll();
     }
 
     @Cacheable(value = "productById", key = "#id")
     public Optional<Product> getProductById(Long id) {
-        log.info("Fetching product with id: {}", id);
+        System.out.println("Fetching product with id: " + id);
         return productRepository.findById(id);
     }
 
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
     public Product createProduct(ProductDTO productDTO) {
-        log.info("Creating new product: {}", productDTO.getName());
+        return createProduct(productDTO, null); // Use default AI model
+    }
+
+    @CacheEvict(value = {"products", "productById"}, allEntries = true)
+    public Product createProduct(ProductDTO productDTO, String aiModel) {
+        System.out.println("Creating new product: " + productDTO.getName());
         
         // Check for duplicate SKU
         if (productDTO.getSku() != null && productRepository.findBySku(productDTO.getSku()).isPresent()) {
             throw new DuplicateSkuException("Product with SKU " + productDTO.getSku() + " already exists");
+        }
+        
+        // AI-powered description generation if description is empty and AI model is specified
+        if ((productDTO.getDescription() == null || productDTO.getDescription().trim().isEmpty()) && aiModel != null) {
+            try {
+                String generatedDescription = aiModelService.generateProductDescription(
+                    productDTO.getName(), 
+                    productDTO.getCategory() != null ? productDTO.getCategory() : "General",
+                    aiModel
+                );
+                productDTO.setDescription(generatedDescription);
+                System.out.println("AI-generated description for product: " + productDTO.getName());
+            } catch (Exception e) {
+                System.out.println("Failed to generate AI description: " + e.getMessage());
+                // Continue without AI description
+            }
         }
         
         Product product = convertToEntity(productDTO);
@@ -62,14 +92,14 @@ public class ProductService {
         // Send to Kafka for asynchronous processing
         kafkaProducerService.sendProduct(savedProduct);
         
-        log.info("Product created successfully with id: {}", savedProduct.getId());
+        System.out.println("Product created successfully with id: " + savedProduct.getId());
         return savedProduct;
     }
 
     @Transactional
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
     public Product updateProduct(Long id, ProductDTO productDTO) {
-        log.info("Updating product with id: {}", id);
+        System.out.println("Updating product with id: " + id);
         
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -96,24 +126,24 @@ public class ProductService {
         
         kafkaProducerService.sendProduct(updatedProduct);
         
-        log.info("Product updated successfully with id: {}", id);
+        System.out.println("Product updated successfully with id: " + id);
         return updatedProduct;
     }
 
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
     public void deleteProduct(Long id) {
-        log.info("Deleting product with id: {}", id);
+        System.out.println("Deleting product with id: " + id);
         
         if (!productRepository.existsById(id)) {
             throw new ProductNotFoundException("Product not found with id: " + id);
         }
         
         productRepository.deleteById(id);
-        log.info("Product deleted successfully with id: {}", id);
+        System.out.println("Product deleted successfully with id: " + id);
     }
 
     public Page<Product> searchProducts(ProductSearchDTO searchDTO) {
-        log.info("Searching products with criteria: {}", searchDTO);
+        System.out.println("Searching products with criteria: " + searchDTO);
         
         Sort.Direction direction = searchDTO.getSortDirection().equalsIgnoreCase("DESC") 
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
@@ -132,52 +162,52 @@ public class ProductService {
 
     @Cacheable(value = "productsByCategory", key = "#category")
     public List<Product> getProductsByCategory(String category) {
-        log.info("Fetching products by category: {}", category);
+        System.out.println("Fetching products by category: " + category);
         return productRepository.findByCategory(category);
     }
 
     @Cacheable(value = "activeProducts")
     public List<Product> getActiveProducts() {
-        log.info("Fetching active products");
+        System.out.println("Fetching active products");
         return productRepository.findByIsActiveTrue();
     }
 
     @Cacheable(value = "productsByName", key = "#name")
     public List<Product> searchProductsByName(String name) {
-        log.info("Searching products by name: {}", name);
+        System.out.println("Searching products by name: " + name);
         return productRepository.findByNameContainingIgnoreCase(name);
     }
 
     @Cacheable(value = "productsByDescription", key = "#description")
     public List<Product> searchProductsByDescription(String description) {
-        log.info("Searching products by description: {}", description);
+        System.out.println("Searching products by description: " + description);
         return productRepository.findByDescriptionContainingIgnoreCase(description);
     }
 
     public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
-        log.info("Fetching products by price range: {} - {}", minPrice, maxPrice);
+        System.out.println("Fetching products by price range: " + minPrice + " - " + maxPrice);
         return productRepository.findByPriceBetween(minPrice, maxPrice);
     }
 
     public List<Product> getLowStockProducts(Integer threshold) {
-        log.info("Fetching products with stock below threshold: {}", threshold);
+        System.out.println("Fetching products with stock below threshold: " + threshold);
         return productRepository.findLowStockProducts(threshold);
     }
 
     public List<Object[]> getProductsCountByCategory() {
-        log.info("Fetching product count by category");
+        System.out.println("Fetching product count by category");
         return productRepository.countProductsByCategory();
     }
 
     public List<Product> getRecentlyAddedProducts(int limit) {
-        log.info("Fetching recently added products, limit: {}", limit);
+        System.out.println("Fetching recently added products, limit: " + limit);
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         return productRepository.findRecentlyAddedProducts(pageable);
     }
 
     @Transactional
     public Product updateStock(Long id, Integer quantity, String operation) {
-        log.info("Updating stock for product {}: {} {}", id, operation, quantity);
+        System.out.println("Updating stock for product " + id + ": " + operation + " " + quantity);
         
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -196,12 +226,12 @@ public class ProductService {
         Product updatedProduct = productRepository.save(product);
         kafkaProducerService.sendProduct(updatedProduct);
         
-        log.info("Stock updated successfully for product {}. New stock: {}", id, updatedProduct.getStockQuantity());
+        System.out.println("Stock updated successfully for product " + id + ". New stock: " + updatedProduct.getStockQuantity());
         return updatedProduct;
     }
 
     public List<PriceHistory> getProductPriceHistory(Long productId) {
-        log.info("Fetching price history for product: {}", productId);
+        System.out.println("Fetching price history for product: " + productId);
         return priceHistoryRepository.findByProductIdOrderByChangedAtDesc(productId);
     }
 
