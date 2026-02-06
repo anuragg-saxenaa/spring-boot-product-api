@@ -67,12 +67,12 @@ You should see Kafka and Zookeeper containers running.
 
 1. Clean and build the project:
 ```bash
-mvn clean install
+./mvnw clean install
 ```
 
 2. Run the application:
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 The application will start on `http://localhost:8080`
@@ -99,7 +99,7 @@ No external dependencies required. Tests use embedded Kafka.
 ### Running All Tests
 
 ```bash
-mvn clean test
+./mvnw test
 ```
 
 This will run:
@@ -111,24 +111,24 @@ This will run:
 
 1. Run only controller tests:
 ```bash
-mvn test -Dtest=ProductControllerIntegrationTest
+./mvnw -Dtest=ProductControllerIntegrationTest
 ```
 
 2. Run only service tests:
 ```bash
-mvn test -Dtest=ProductServiceTest
+./mvnw -Dtest=ProductServiceTest
 ```
 
 3. Run only Kafka integration tests:
 ```bash
-mvn test -Dtest=KafkaIntegrationTest
+./mvnw -Dtest=KafkaIntegrationTest
 ```
 
 ### Test Coverage Report
 
 To generate a test coverage report:
 ```bash
-mvn clean test jacoco:report
+./mvnw test jacoco:report
 ```
 The report will be available at: `target/site/jacoco/index.html`
 
@@ -180,7 +180,7 @@ cd product-management-api
 
 2. Build the project:
 ```bash
-mvn clean install
+./mvnw clean install
 ```
 
 ### Development Environment

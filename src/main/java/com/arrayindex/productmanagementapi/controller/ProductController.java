@@ -5,13 +5,14 @@ import com.arrayindex.productmanagementapi.dto.ProductSearchDTO;
 import com.arrayindex.productmanagementapi.model.Product;
 import com.arrayindex.productmanagementapi.model.PriceHistory;
 import com.arrayindex.productmanagementapi.service.ProductService;
+import com.arrayindex.productmanagementapi.exception.ProductNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +23,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/products")
 @Tag(name = "Product Controller", description = "Enhanced APIs for managing products with advanced features")
-@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+
+    @Autowired
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     @Operation(summary = "Get all products", description = "Retrieves a list of all available products")
     @ApiResponses(value = {
@@ -59,6 +64,20 @@ public class ProductController {
     public ResponseEntity<Product> createProduct(
             @Valid @RequestBody ProductDTO productDTO) {
         Product createdProduct = productService.createProduct(productDTO);
+        return ResponseEntity.status(201).body(createdProduct);
+    }
+
+    @Operation(summary = "Create AI-enhanced product", description = "Creates a new product with AI-generated description if none provided")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Successfully created product with AI enhancement"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "409", description = "SKU already exists")
+    })
+    @PostMapping("/ai-enhanced")
+    public ResponseEntity<Product> createAIEnhancedProduct(
+            @Valid @RequestBody ProductDTO productDTO,
+            @Parameter(description = "AI model to use (ollama, gemini, moonshot)") @RequestParam(required = false) String aiModel) {
+        Product createdProduct = productService.createProduct(productDTO, aiModel);
         return ResponseEntity.status(201).body(createdProduct);
     }
 
