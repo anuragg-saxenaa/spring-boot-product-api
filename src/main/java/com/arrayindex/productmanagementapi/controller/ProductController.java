@@ -5,13 +5,14 @@ import com.arrayindex.productmanagementapi.dto.ProductSearchDTO;
 import com.arrayindex.productmanagementapi.model.Product;
 import com.arrayindex.productmanagementapi.model.PriceHistory;
 import com.arrayindex.productmanagementapi.service.ProductService;
+import com.arrayindex.productmanagementapi.exception.ProductNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +23,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/products")
 @Tag(name = "Product Controller", description = "Enhanced APIs for managing products with advanced features")
-@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+
+    @Autowired
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     @Operation(summary = "Get all products", description = "Retrieves a list of all available products")
     @ApiResponses(value = {
@@ -62,6 +67,7 @@ public class ProductController {
         return ResponseEntity.status(201).body(createdProduct);
     }
 
+    // AI-enhanced endpoints removed (non-deterministic external dependency).
     @Operation(summary = "Update product", description = "Updates an existing product by its ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully updated product"),

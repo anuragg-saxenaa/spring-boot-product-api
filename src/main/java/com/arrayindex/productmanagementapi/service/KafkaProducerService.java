@@ -1,22 +1,28 @@
 package com.arrayindex.productmanagementapi.service;
 
 import com.arrayindex.productmanagementapi.model.Product;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.KafkaException;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class KafkaProducerService {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaProducerService.class);
 
     private final KafkaTemplate<String, Product> kafkaTemplate;
     
     @Value("${spring.kafka.enabled:true}")
     private boolean kafkaEnabled;
+
+    @Autowired
+    public KafkaProducerService(KafkaTemplate<String, Product> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     public void sendProduct(Product product) {
         if (!kafkaEnabled) {
@@ -27,11 +33,16 @@ public class KafkaProducerService {
         try {
             log.info("Sending product to Kafka: {}", product);
             String key = product.getId() != null ? product.getId().toString() : "new-product";
-            kafkaTemplate.send("products", key, product)
-                .addCallback(
-                    result -> log.info("Successfully sent product {} to Kafka", product.getId()),
-                    failure -> log.error("Failed to send product {} to Kafka: {}", product.getId(), failure.getMessage())
-                );
+            
+            // Use CompletableFuture with whenComplete instead of addCallback
+            kafkaTemplate.send("products", key, product).whenComplete((result, exception) -> {
+                if (exception != null) {
+                    log.error("Failed to send product {} to Kafka: {}", product.getId(), exception.getMessage());
+                } else {
+                    log.info("Successfully sent product {} to Kafka", product.getId());
+                }
+            });
+            
         } catch (KafkaException e) {
             log.error("Kafka exception while sending product {}: {}", product.getId(), e.getMessage());
             // Don't throw - continue operation without Kafka
@@ -40,4 +51,4 @@ public class KafkaProducerService {
             // Don't throw - continue operation without Kafka
         }
     }
-} 
+}

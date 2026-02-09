@@ -1,6 +1,7 @@
 package com.arrayindex.productmanagementapi.config;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +19,9 @@ import java.util.Map;
 
 @Configuration
 @EnableCaching
-@Slf4j
 public class CacheConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(CacheConfig.class);
 
     @Bean
     @Primary
