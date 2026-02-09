@@ -67,20 +67,7 @@ public class ProductController {
         return ResponseEntity.status(201).body(createdProduct);
     }
 
-    @Operation(summary = "Create AI-enhanced product", description = "Creates a new product with AI-generated description if none provided")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Successfully created product with AI enhancement"),
-        @ApiResponse(responseCode = "400", description = "Invalid input"),
-        @ApiResponse(responseCode = "409", description = "SKU already exists")
-    })
-    @PostMapping("/ai-enhanced")
-    public ResponseEntity<Product> createAIEnhancedProduct(
-            @Valid @RequestBody ProductDTO productDTO,
-            @Parameter(description = "AI model to use (ollama, gemini, moonshot)") @RequestParam(required = false) String aiModel) {
-        Product createdProduct = productService.createProduct(productDTO, aiModel);
-        return ResponseEntity.status(201).body(createdProduct);
-    }
-
+    // AI-enhanced endpoints removed (non-deterministic external dependency).
     @Operation(summary = "Update product", description = "Updates an existing product by its ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully updated product"),

@@ -8,20 +8,13 @@ import org.springframework.test.context.TestPropertySource;
 @org.springframework.test.context.ActiveProfiles("test")
 @TestPropertySource(properties = {
     "spring.kafka.enabled=false",
-    "spring.redis.host=localhost",
-    "ai.model.default=gemini"
+    "spring.redis.host=localhost"
 })
 class ProductManagementApplicationWorkingTest {
 
     @Test
     void contextLoads() {
-        // Simple test to verify the application context loads with AI integration
-        System.out.println("✅ Application context loaded successfully with Gemini AI integration");
-    }
-
-    @Test
-    void aiConfigurationTest() {
-        // Test that AI configuration is properly loaded
-        System.out.println("✅ AI Model Configuration loaded - Gemini is default");
+        // Smoke test: verifies the application context loads.
+        System.out.println("✅ Application context loaded successfully");
     }
 }

@@ -31,17 +31,14 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final PriceHistoryRepository priceHistoryRepository;
     private final KafkaProducerService kafkaProducerService;
-    private final AIModelService aiModelService;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, 
-                         PriceHistoryRepository priceHistoryRepository,
-                         KafkaProducerService kafkaProducerService,
-                         AIModelService aiModelService) {
+    public ProductService(ProductRepository productRepository,
+                          PriceHistoryRepository priceHistoryRepository,
+                          KafkaProducerService kafkaProducerService) {
         this.productRepository = productRepository;
         this.priceHistoryRepository = priceHistoryRepository;
         this.kafkaProducerService = kafkaProducerService;
-        this.aiModelService = aiModelService;
     }
 
     @Cacheable(value = "products", key = "'all'")
@@ -58,40 +55,19 @@ public class ProductService {
 
     @CacheEvict(value = {"products", "productById"}, allEntries = true)
     public Product createProduct(ProductDTO productDTO) {
-        return createProduct(productDTO, null); // Use default AI model
-    }
-
-    @CacheEvict(value = {"products", "productById"}, allEntries = true)
-    public Product createProduct(ProductDTO productDTO, String aiModel) {
         System.out.println("Creating new product: " + productDTO.getName());
-        
+
         // Check for duplicate SKU
         if (productDTO.getSku() != null && productRepository.findBySku(productDTO.getSku()).isPresent()) {
             throw new DuplicateSkuException("Product with SKU " + productDTO.getSku() + " already exists");
         }
-        
-        // AI-powered description generation if description is empty and AI model is specified
-        if ((productDTO.getDescription() == null || productDTO.getDescription().trim().isEmpty()) && aiModel != null) {
-            try {
-                String generatedDescription = aiModelService.generateProductDescription(
-                    productDTO.getName(), 
-                    productDTO.getCategory() != null ? productDTO.getCategory() : "General",
-                    aiModel
-                );
-                productDTO.setDescription(generatedDescription);
-                System.out.println("AI-generated description for product: " + productDTO.getName());
-            } catch (Exception e) {
-                System.out.println("Failed to generate AI description: " + e.getMessage());
-                // Continue without AI description
-            }
-        }
-        
+
         Product product = convertToEntity(productDTO);
         Product savedProduct = productRepository.save(product);
-        
+
         // Send to Kafka for asynchronous processing
         kafkaProducerService.sendProduct(savedProduct);
-        
+
         System.out.println("Product created successfully with id: " + savedProduct.getId());
         return savedProduct;
     }

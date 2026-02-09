@@ -24,7 +24,22 @@
         <kafka.version>3.6.2</kafka.version>
         <testcontainers.version>1.19.7</testcontainers.version>
         <lombok.version>1.18.36</lombok.version>
+        <spring-cloud.version>2023.0.2</spring-cloud.version>
+        <spring-cloud-contract.version>4.1.4</spring-cloud-contract.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -95,6 +110,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Cloud Contract Verifier (CDC / contract testing) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Embedded Kafka for Testing -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
@@ -127,6 +149,28 @@
                     <!-- Lombok annotation processor removed for Java 21 compatibility -->
                 </configuration>
             </plugin>
+
+            <!-- Spring Cloud Contract (CDC) -->
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <version>${spring-cloud-contract.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <testFramework>JUNIT5</testFramework>
+                    <baseClassForTests>com.arrayindex.productmanagementapi.contract.BaseContractTest</baseClassForTests>
+                    <contractsDirectory>src/test/resources/contracts</contractsDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>convert</goal>
+                            <goal>generateTests</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Docker Maven Plugin -->
             <plugin>
                 <groupId>com.spotify</groupId>
