@@ -1,0 +1,45 @@
+name: CI (tests + contracts)
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run tests (includes Spring Cloud Contract generated tests)
+        run: ./mvnw -q test
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+          if-no-files-found: ignore
+
+      - name: Upload Spring Cloud Contract generated tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-contract-tests
+          path: |
+            **/target/generated-test-sources/**
+            **/target/generated-contract-tests/**
+          if-no-files-found: ignore
